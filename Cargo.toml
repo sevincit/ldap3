@@ -33,6 +33,9 @@ async-trait = "0.1.30"
 path = "lber"
 version = "0.2.0"
 
+[dependencies.sspi]
+version = "0.1.1"
+
 [features]
 default = ["sync", "tls"]
 tls = ["tls-native"]

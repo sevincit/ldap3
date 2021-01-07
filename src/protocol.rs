@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::controls::{Control, RawControl};
+use crate::{controls::{Control, RawControl}, controls_impl::parse_bind_response};
 use crate::controls_impl::{build_tag, parse_controls};
 use crate::search::SearchItem;
 use crate::RequestId;
@@ -102,7 +102,15 @@ impl Decoder for LdapCodec {
             IResult::Done(_, id) => id as i32,
             _ => return Err(decoding_error),
         };
-        Ok(Some((msgid, (Tag::StructureTag(protoop), controls))))
+//        Ok(Some((msgid, (Tag::StructureTag(protoop), controls))))
+
+        match protoop.id {
+            1 => {
+                let controls = parse_bind_response(protoop.clone());
+                Ok(Some((msgid, (Tag::StructureTag(protoop), controls))))
+            }
+            _ => Ok(Some((msgid, (Tag::StructureTag(protoop), controls)))),
+        }
     }
 }
 

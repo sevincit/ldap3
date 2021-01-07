@@ -208,6 +208,7 @@ mod ldap;
 mod protocol;
 pub mod result;
 mod search;
+mod spnego;
 #[cfg(feature = "sync")]
 mod sync;
 mod util;

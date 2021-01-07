@@ -12,7 +12,7 @@ use lazy_static::lazy_static;
 /// recognized and internally implemented controls can change from one
 /// release to the next.
 #[non_exhaustive]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ControlType {
     PagedResults,
     PostReadResp,
@@ -21,6 +21,7 @@ pub enum ControlType {
     SyncState,
     ManageDsaIt,
     MatchedValues,
+    BindResponse,
 }
 
 mod assertion;
@@ -228,6 +229,28 @@ pub fn parse_controls(t: StructureTag) -> Vec<Control> {
             None => None,
         };
         ctrls.push(Control(known_type, RawControl { ctype, crit, val }));
+    }
+    ctrls
+}
+
+use lber::common::TagClass;
+use crate::controls_impl::ControlType::BindResponse;
+
+pub const SPNEGO_MECH_OID: &'static str = "1.3.6.1.5.5.2";
+
+pub fn parse_bind_response(t: StructureTag) -> Vec<Control> {
+    let mut ctrls = Vec::new();
+    let tags = t.clone().expect_constructed().expect("result sequence").into_iter();
+    for tag in tags {
+        if tag.class == TagClass::Context && tag.id == 7 {
+            // serverSaslCreds    [7] OCTET STRING OPTIONAL
+            let token = tag.expect_primitive().unwrap().clone();
+            ctrls.push(Control(Some(BindResponse), RawControl {
+                ctype: SPNEGO_MECH_OID.to_string(),
+                crit: false,
+                val: Some(token.clone())
+            }));
+        }
     }
     ctrls
 }

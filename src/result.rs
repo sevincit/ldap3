@@ -10,7 +10,7 @@ use std::fmt;
 use std::io;
 use std::result::Result as StdResult;
 
-use crate::controls::Control;
+use crate::controls::{Control, ControlType};
 use crate::exop::Exop;
 use crate::protocol::{LdapOp, MaybeControls, ResultSender};
 use crate::search::parse_refs;
@@ -277,6 +277,28 @@ impl LdapResult {
         } else {
             Err(LdapError::from(self))
         }
+    }
+
+    /// If the result code is 0 or 14 (saslBindInProgress), return the instance
+    /// itself wrapped in `Ok()`, otherwise wrap the instance in an
+    /// `io::Error`.
+    pub fn bind_ok(self) -> std::result::Result<Self, io::Error> {
+        if self.rc == 0 || self.rc == 14 {
+            Ok(self)
+        } else {
+            Err(io::Error::new(io::ErrorKind::Other, self))
+        }
+    }
+
+    pub fn get_bind_token(&mut self) -> Option<Vec<u8>> {
+        for ctrl in &self.ctrls {
+            if ctrl.0 == Some(ControlType::BindResponse) {
+                if let Some(val) = ctrl.1.val.clone() {
+                    return Some(val);
+                }
+            }
+        }
+        None
     }
 }
 
